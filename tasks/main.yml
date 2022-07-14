@@ -1,0 +1,36 @@
+---
+# tasks file for hadoop_name
+
+- name: create name node directory
+  file:
+	path: /nn
+	state: directory
+	mode: '0755'
+
+- name: configure hdfs file
+  template:
+	src: hdfs.xml
+	dest: /etc/hadoop/hdfs-site.xml
+	mode: u=rw,g=r,o=r
+
+- name: configure core site
+  template:
+	src: core.xml
+	dest: /etc/hadoop/core-site/xml
+	mode: u=rw,g=r,o=r
+
+- name: format name node
+  command: hdfs namenode -format -force
+  when: hdfs.changed == true
+
+- name: check namenode in jps
+  command: "jps"
+  become: yes
+  become_method: sudo
+  become_user: root
+  register: jps_status
+  changed_when: False
+
+- name: start name node
+  command: hdfs --daemon start namenode
+  when: '"NameNode" not in jps_status.stdout'
